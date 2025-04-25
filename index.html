@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Tarifas FOR</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 40px auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px); /* Account for padding */
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            text-transform: uppercase; /* Ensure input matches data keys */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #resultado {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px dashed #ccc;
+            background-color: #e9e9e9;
+            border-radius: 4px;
+            min-height: 50px; /* Ensure space even when empty */
+            line-height: 1.6;
+        }
+        .error {
+            color: #d9534f;
+            font-weight: bold;
+        }
+         .success {
+            color: #3c763d;
+        }
+        strong {
+             color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Tarifario (FOR)</h1>
+
+    <label for="destinoInput">Digite o Código de Destino:</label>
+    <input type="text" id="destinoInput" placeholder="Ex: AAX, BEL, CWB...">
+
+    <button onclick="buscarTarifa()">Buscar Tarifa</button>
+
+    <div id="resultado">
+        <!-- Os resultados serão exibidos aqui -->
+        Aguardando busca...
+    </div>
+</div>
+
+<script>
+    // Data extracted from the images (Origin FOR)
+    const tarifas = {
+        "AAX": { minimo: 133.50, tarifa: 4.45 },
+        "ACA02": { minimo: 194.10, tarifa: 6.47 },
+        "AFL": { minimo: 168.60, tarifa: 5.62 },
+        "AFLH1": { minimo: 186.30, tarifa: 6.21 },
+        "AIF01": { minimo: 133.50, tarifa: 4.45 },
+        "AIR": { minimo: 168.60, tarifa: 5.62 },
+        "AJA02": { minimo: 133.50, tarifa: 4.45 },
+        "AJU": { minimo: 96.00, tarifa: 3.20 },
+        "ALQ": { minimo: 249.30, tarifa: 8.31 },
+        "ANA01": { minimo: 244.80, tarifa: 8.16 },
+        "APD01": { minimo: 220.20, tarifa: 7.34 },
+        "APQ01": { minimo: 102.90, tarifa: 3.43 },
+        "APS02": { minimo: 213.00, tarifa: 7.10 },
+        "APS03": { minimo: 220.20, tarifa: 7.34 },
+        "AQA": { minimo: 110.70, tarifa: 3.69 },
+        "ARM01": { minimo: 377.40, tarifa: 12.58 },
+        "ARU": { minimo: 206.10, tarifa: 6.87 },
+        "ATM": { minimo: 237.30, tarifa: 7.91 },
+        "AXE01": { minimo: 229.80, tarifa: 7.66 },
+        "BAC01": { minimo: 229.80, tarifa: 7.66 },
+        "BEL": { minimo: 248.40, tarifa: 8.28 },
+        "BELT1": { minimo: 248.70, tarifa: 8.29 },
+        "BGV03": { minimo: 223.50, tarifa: 7.45 },
+        "BHZ01": { minimo: 141.00, tarifa: 4.70 },
+        "BHZ04": { minimo: 141.00, tarifa: 4.70 },
+        "BNU02": { minimo: 223.50, tarifa: 7.45 },
+        "BPG": { minimo: 201.30, tarifa: 6.71 },
+        "BPS": { minimo: 96.00, tarifa: 3.20 },
+        "BQR01": { minimo: 117.90, tarifa: 3.93 },
+        "BSB": { minimo: 168.60, tarifa: 5.62 },
+        "BSB01": { minimo: 176.10, tarifa: 5.87 },
+        "BSB02": { minimo: 176.10, tarifa: 5.87 },
+        "BVB": { minimo: 351.90, tarifa: 11.73 },
+        "BVH": { minimo: 370.50, tarifa: 12.35 },
+        "BVJ01": { minimo: 133.50, tarifa: 4.45 },
+        "BVS": { minimo: 237.30, tarifa: 7.91 },
+        "CAC": { minimo: 322.20, tarifa: 10.74 },
+        "CAC01": { minimo: 328.80, tarifa: 10.96 },
+        "CAU01": { minimo: 102.90, tarifa: 3.43 },
+        "CBW": { minimo: 210.00, tarifa: 7.00 },
+        "CCI01": { minimo: 223.50, tarifa: 7.45 },
+        "CDSP2": { minimo: 133.50, tarifa: 4.45 },
+        "CEL": { minimo: 216.60, tarifa: 7.22 },
+        "CGB": { minimo: 168.60, tarifa: 5.62 },
+        "CGBT2": { minimo: 186.30, tarifa: 6.21 },
+        "CGBT3": { minimo: 186.30, tarifa: 6.21 },
+        "CGBT4": { minimo: 186.30, tarifa: 6.21 },
+        "CGH": { minimo: 110.70, tarifa: 3.69 },
+        "CGR": { minimo: 206.10, tarifa: 6.87 },
+        "CGR01": { minimo: 213.00, tarifa: 7.10 },
+        "CGRT1": { minimo: 220.20, tarifa: 7.34 },
+        "CKS": { minimo: 237.30, tarifa: 7.91 },
+        "CMG": { minimo: 206.10, tarifa: 6.87 },
+        "CNF": { minimo: 134.10, tarifa: 4.47 },
+        "CNFT1": { minimo: 154.80, tarifa: 5.16 },
+        "CPV": { minimo: 96.00, tarifa: 3.20 },
+        "CSG01": { minimo: 120.00, tarifa: 4.00 },
+        "CSU": { minimo: 216.60, tarifa: 7.22 },
+        "CTG02": { minimo: 141.00, tarifa: 4.70 },
+        "CTL01": { minimo: 244.80, tarifa: 8.16 },
+        "CWB": { minimo: 177.30, tarifa: 5.91 },
+        "CWB05": { minimo: 184.50, tarifa: 6.15 },
+        "CWBT1": { minimo: 194.10, tarifa: 6.47 },
+        "CXJ": { minimo: 216.60, tarifa: 7.22 },
+        "DIQ": { minimo: 134.10, tarifa: 4.47 },
+        "DOU": { minimo: 370.50, tarifa: 12.35 },
+        "DOUT1": { minimo: 220.20, tarifa: 7.34 },
+        "ERM": { minimo: 229.80, tarifa: 7.66 },
+        "FEC": { minimo: 96.00, tarifa: 3.20 },
+        "FECH1": { minimo: 120.00, tarifa: 4.00 },
+        "FEN": { minimo: 306.90, tarifa: 10.23 },
+        "FLN": { minimo: 216.60, tarifa: 7.22 },
+        "FLN01": { minimo: 223.50, tarifa: 7.45 },
+        "FLNT2": { minimo: 229.80, tarifa: 7.66 },
+        "FOR07": { minimo: 139.20, tarifa: 4.64 },
+        "FORH8": { minimo: 139.20, tarifa: 4.64 },
+        "FRC02": { minimo: 186.30, tarifa: 6.21 },
+        "GEL": { minimo: 216.60, tarifa: 7.22 },
+        "GGB": { minimo: 168.60, tarifa: 5.62 },
+        "GGF": { minimo: 237.30, tarifa: 7.91 },
+        "GIG": { minimo: 110.70, tarifa: 3.69 },
+        "GNM02": { minimo: 213.00, tarifa: 7.10 },
+        "GPB": { minimo: 194.10, tarifa: 6.47 },
+        "GRU": { minimo: 110.70, tarifa: 3.69 },
+        "GRU03": { minimo: 117.90, tarifa: 3.93 },
+        "GRU04": { minimo: 133.50, tarifa: 4.45 },
+        "GRUT1": { minimo: 133.50, tarifa: 4.45 },
+        "GUI01": { minimo: 248.70, tarifa: 8.29 },
+        "GVR": { minimo: 134.10, tarifa: 4.47 },
+        "GXP01": { minimo: 186.30, tarifa: 6.21 },
+        "GYN": { minimo: 206.10, tarifa: 6.87 },
+        "HLB01": { minimo: 117.90, tarifa: 3.93 },
+        "HTA01": { minimo: 117.90, tarifa: 3.93 },
+        "IDT01": { minimo: 117.90, tarifa: 3.93 },
+        "IGU": { minimo: 216.60, tarifa: 7.22 },
+        "IGU01": { minimo: 229.80, tarifa: 7.66 },
+        "IJU02": { minimo: 229.80, tarifa: 7.66 },
+        "IMP": { minimo: 206.10, tarifa: 6.87 },
+        "IOS": { minimo: 96.00, tarifa: 3.20 },
+        "IPN": { minimo: 134.10, tarifa: 4.47 },
+        "ITB": { minimo: 237.30, tarifa: 7.91 },
+        "ITD01": { minimo: 154.80, tarifa: 5.16 },
+        "ITG01": { minimo: 133.50, tarifa: 4.45 },
+        "ITJ02": { minimo: 229.80, tarifa: 7.66 },
+        "ITRO1": { minimo: 176.10, tarifa: 5.87 },
+        "ITU02": { minimo: 117.90, tarifa: 3.93 },
+        "IZA": { minimo: 110.70, tarifa: 3.69 },
+        "JAC02": { minimo: 133.50, tarifa: 4.45 },
+        "JAU02": { minimo: 133.50, tarifa: 4.45 },
+        "JDO": { minimo: 139.20, tarifa: 4.64 },
+        "JDR": { minimo: 154.80, tarifa: 5.16 },
+        "JIA": { minimo: 168.60, tarifa: 5.62 },
+        "JJD": { minimo: 139.20, tarifa: 4.64 },
+        "JJG": { minimo: 216.60, tarifa: 7.22 },
+        "JOI": { minimo: 216.60, tarifa: 7.22 },
+        "JPA": { minimo: 96.00, tarifa: 3.20 },
+        "JPA01": { minimo: 102.90, tarifa: 3.43 },
+        "JPA04": { minimo: 120.00, tarifa: 4.00 },
+        "JPE": { minimo: 248.70, tarifa: 8.29 },
+        "JPO": { minimo: 96.00, tarifa: 3.20 },
+        "JTC": { minimo: 110.70, tarifa: 3.69 },
+        "JUU01": { minimo: 133.50, tarifa: 4.45 },
+        "LBR": { minimo: 308.40, tarifa: 10.28 },
+        "LDB": { minimo: 216.60, tarifa: 7.22 },
+        "LDBT1": { minimo: 229.80, tarifa: 7.66 },
+        "LFR02": { minimo: 102.90, tarifa: 3.43 },
+        "LHN": { minimo: 248.70, tarifa: 8.29 },
+        "LVR01": { minimo: 369.90, tarifa: 12.33 },
+        "MAB": { minimo: 248.40, tarifa: 8.28 },
+        "MAO": { minimo: 337.50, tarifa: 11.25 },
+        "MAO01": { minimo: 348.60, tarifa: 11.62 },
+        "MCP": { minimo: 307.50, tarifa: 10.25 },
+        "MCZ": { minimo: 110.70, tarifa: 3.69 },
+        "MCZH1": { minimo: 133.50, tarifa: 4.45 },
+        "MEA": { minimo: 143.70, tarifa: 4.79 },
+        "MEU": { minimo: 237.30, tarifa: 7.91 },
+        "MGF": { minimo: 216.60, tarifa: 7.22 },
+        "MII": { minimo: 110.70, tarifa: 3.69 },
+        "MMA01": { minimo: 229.80, tarifa: 7.66 },
+        "MMM01": { minimo: 117.90, tarifa: 3.93 },
+        "MOC": { minimo: 168.60, tarifa: 5.62 },
+        "MOW01": { minimo: 139.20, tarifa: 4.64 },
+        "MVF": { minimo: 96.00, tarifa: 3.20 },
+        "NAT": { minimo: 96.00, tarifa: 3.20 },
+        "NAT01": { minimo: 102.90, tarifa: 3.43 },
+        "NITO2": { minimo: 133.50, tarifa: 4.45 },
+        "NLM01": { minimo: 154.80, tarifa: 5.16 },
+        "NNS01": { minimo: 120.00, tarifa: 4.00 },
+        "NSR": { minimo: 96.00, tarifa: 3.20 },
+        "NVT": { minimo: 216.60, tarifa: 7.22 },
+        "NVV01": { minimo: 141.00, tarifa: 4.70 },
+        "OAL": { minimo: 370.50, tarifa: 12.35 },
+        "OLL01": { minimo: 102.90, tarifa: 3.43 },
+        "OPP": { minimo: 237.30, tarifa: 7.91 },
+        "OPS": { minimo: 168.60, tarifa: 5.62 },
+        "PCW01": { minimo: 194.10, tarifa: 6.47 },
+        "PDM01": { minimo: 154.80, tarifa: 5.16 },
+        "PET": { minimo: 216.60, tarifa: 7.22 },
+        "PFB": { minimo: 216.60, tarifa: 7.22 },
+        "PGZ": { minimo: 177.30, tarifa: 5.91 },
+        "PHB": { minimo: 120.00, tarifa: 4.00 },
+        "PIL01": { minimo: 186.30, tarifa: 6.21 },
+        "PLU": { minimo: 134.10, tarifa: 4.47 },
+        "PMG": { minimo: 206.10, tarifa: 6.87 },
+        "PMW": { minimo: 215.70, tarifa: 7.19 },
+        "PMWT1": { minimo: 220.20, tarifa: 7.34 },
+        "PNG01": { minimo: 184.50, tarifa: 6.15 },
+        "PNZ": { minimo: 110.70, tarifa: 3.69 },
+        "POA": { minimo: 216.60, tarifa: 7.22 },
+        "POA01": { minimo: 223.50, tarifa: 7.45 },
+        "POA03": { minimo: 223.50, tarifa: 7.45 },
+        "POARC": { minimo: 229.80, tarifa: 7.66 },
+        "POO01": { minimo: 117.90, tarifa: 3.93 },
+        "PPB": { minimo: 110.70, tarifa: 3.69 },
+        "PPY02": { minimo: 117.90, tarifa: 3.93 },
+        "PSW01": { minimo: 186.30, tarifa: 6.21 },
+        "PTQ": { minimo: 237.30, tarifa: 7.91 },
+        "PVH": { minimo: 387.90, tarifa: 12.93 },
+        "PVH01": { minimo: 377.40, tarifa: 12.58 },
+        "PVH02": { minimo: 369.90, tarifa: 12.33 },
+        "QBK01": { minimo: 141.00, tarifa: 4.70 },
+        "QBU01": { minimo: 120.00, tarifa: 4.00 },
+        "QBX01": { minimo: 139.20, tarifa: 4.64 },
+        "QCA01": { minimo: 133.50, tarifa: 4.45 },
+        "QCC01": { minimo: 102.90, tarifa: 3.43 },
+        "QCD01": { minimo: 223.50, tarifa: 7.45 },
+        "QCJ01": { minimo: 117.90, tarifa: 3.93 },
+        "QCX01": { minimo: 117.90, tarifa: 3.93 },
+        "QDV01": { minimo: 117.90, tarifa: 3.93 },
+        "QDW03": { minimo: 133.50, tarifa: 4.45 },
+        "QET02": { minimo: 117.90, tarifa: 3.93 },
+        "QEV01": { minimo: 133.50, tarifa: 4.45 },
+        "QGB01": { minimo: 117.90, tarifa: 3.93 },
+        "QGF01": { minimo: 223.50, tarifa: 7.45 },
+        "QGP": { minimo: 120.00, tarifa: 4.00 },
+        "QHB01": { minimo: 117.90, tarifa: 3.93 },
+        "QHG01": { minimo: 141.00, tarifa: 4.70 },
+        "QHP01": { minimo: 117.90, tarifa: 3.93 },
+        "QHV01": { minimo: 223.50, tarifa: 7.45 },
+        "QIQ03": { minimo: 117.90, tarifa: 3.93 },
+        "QIU01": { minimo: 186.30, tarifa: 6.21 },
+        "QJA03": { minimo: 184.50, tarifa: 6.15 },
+        "QJB01": { minimo: 176.10, tarifa: 5.87 },
+        "QJC01": { minimo: 133.50, tarifa: 4.45 },
+        "QJD01": { minimo: 133.50, tarifa: 4.45 },
+        "QJF01": { minimo: 133.50, tarifa: 4.45 },
+        "QJG01": { minimo: 133.50, tarifa: 4.45 },
+        "QJH01": { minimo: 194.10, tarifa: 6.47 },
+        "QJM01": { minimo: 223.50, tarifa: 7.45 },
+        "QKA02": { minimo: 223.50, tarifa: 7.45 },
+        "QKAT1": { minimo: 229.80, tarifa: 7.66 },
+        "QKK01": { minimo: 120.00, tarifa: 4.00 },
+        "QLB03": { minimo: 223.50, tarifa: 7.45 },
+        "QLL01": { minimo: 223.50, tarifa: 7.45 },
+        "QLY01": { minimo: 133.50, tarifa: 4.45 },
+        "QMA02": { minimo: 133.50, tarifa: 4.45 },
+        "QMI02": { minimo: 117.90, tarifa: 3.93 }, // Note: Corrected from QM102 in OCR if typo
+        "QMO01": { minimo: 186.30, tarifa: 6.21 },
+        "QNS02": { minimo: 223.50, tarifa: 7.45 },
+        "QOC03": { minimo: 117.90, tarifa: 3.93 },
+        "QOI03": { minimo: 117.90, tarifa: 3.93 }, // Note: Corrected from QO103 in OCR if typo
+        "QPA02": { minimo: 117.90, tarifa: 3.93 },
+        "QPB01": { minimo: 223.50, tarifa: 7.45 },
+        "QPT01": { minimo: 117.90, tarifa: 3.93 },
+        "QPV01": { minimo: 117.90, tarifa: 3.93 },
+        "QPY01": { minimo: 186.30, tarifa: 6.21 },
+        "QRG01": { minimo: 186.30, tarifa: 6.21 },
+        "QSA01": { minimo: 154.80, tarifa: 5.16 },
+        "QSB02": { minimo: 117.90, tarifa: 3.93 },
+        "QSC01": { minimo: 117.90, tarifa: 3.93 },
+        "QSE02": { minimo: 117.90, tarifa: 3.93 },
+        "QSE03": { minimo: 133.50, tarifa: 4.45 },
+        "QSW01": { minimo: 186.30, tarifa: 6.21 },
+        "QTB01": { minimo: 223.50, tarifa: 7.45 },
+        "QTR01": { minimo: 220.20, tarifa: 7.34 },
+        "QUC01": { minimo: 139.20, tarifa: 4.64 },
+        "QVH02": { minimo: 248.70, tarifa: 8.29 },
+        "QWJ01": { minimo: 117.90, tarifa: 3.93 },
+        "QXD": { minimo: 139.20, tarifa: 4.64 },
+        "QXM01": { minimo: 248.70, tarifa: 8.29 },
+        "RAO": { minimo: 168.60, tarifa: 5.62 },
+        "RBR": { minimo: 424.50, tarifa: 14.15 },
+        "REC": { minimo: 96.00, tarifa: 3.20 },
+        "REC04": { minimo: 102.90, tarifa: 3.43 },
+        "REC05": { minimo: 102.90, tarifa: 3.43 },
+        "RECT1": { minimo: 120.00, tarifa: 4.00 },
+        "RIA": { minimo: 216.60, tarifa: 7.22 },
+        "RIO03": { minimo: 117.90, tarifa: 3.93 },
+        "RIOT1": { minimo: 133.50, tarifa: 4.45 },
+        "RIOT2": { minimo: 133.50, tarifa: 4.45 },
+        "RIOT4": { minimo: 133.50, tarifa: 4.45 },
+        "RODT1": { minimo: 133.50, tarifa: 4.45 },
+        "ROO": { minimo: 507.30, tarifa: 16.91 },
+        "RVD": { minimo: 206.10, tarifa: 6.87 },
+        "SAO09": { minimo: 117.90, tarifa: 3.93 },
+        "SAO12": { minimo: 117.90, tarifa: 3.93 },
+        "SAO24": { minimo: 117.90, tarifa: 3.93 },
+        "SAO25": { minimo: 117.90, tarifa: 3.93 },
+        "SAO30": { minimo: 117.90, tarifa: 3.93 },
+        "SAO31": { minimo: 133.50, tarifa: 4.45 },
+        "SAO33": { minimo: 133.50, tarifa: 4.45 },
+        "SAO35": { minimo: 133.50, tarifa: 4.45 },
+        "SAOT5": { minimo: 133.50, tarifa: 4.45 },
+        "SDA01": { minimo: 133.50, tarifa: 4.45 },
+        "SDU": { minimo: 110.70, tarifa: 3.69 },
+        "SERO3": { minimo: 248.70, tarifa: 8.29 },
+        "SET": { minimo: 96.00, tarifa: 3.20 },
+        "SJK": { minimo: 133.50, tarifa: 4.45 },
+        "SJP": { minimo: 110.70, tarifa: 3.69 },
+        "SJP02": { minimo: 133.50, tarifa: 4.45 },
+        "SLA01": { minimo: 154.80, tarifa: 5.16 },
+        "SLZ": { minimo: 100.50, tarifa: 3.35 },
+        "SMT": { minimo: 370.50, tarifa: 12.35 },
+        "SOD02": { minimo: 117.90, tarifa: 3.93 },
+        "SRA": { minimo: 229.80, tarifa: 7.66 },
+        "SRR01": { minimo: 176.10, tarifa: 5.87 },
+        "SSA": { minimo: 96.00, tarifa: 3.20 },
+        "SSA02": { minimo: 102.90, tarifa: 3.43 },
+        "SSAT3": { minimo: 120.00, tarifa: 4.00 },
+        "SSZ01": { minimo: 117.90, tarifa: 3.93 },
+        "STC01": { minimo: 102.90, tarifa: 3.43 },
+        "STM": { minimo: 352.80, tarifa: 11.76 },
+        "SUM02": { minimo: 117.90, tarifa: 3.93 },
+        "TBT": { minimo: 1066.20, tarifa: 35.54 },
+        "TFF": { minimo: 1015.20, tarifa: 33.84 },
+        "TGQ": { minimo: 168.60, tarifa: 5.62 },
+        "THE": { minimo: 96.00, tarifa: 3.20 },
+        "TJL": { minimo: 110.70, tarifa: 3.69 },
+        "TLZ01": { minimo: 186.30, tarifa: 6.21 },
+        "TOW": { minimo: 322.20, tarifa: 10.74 },
+        "TUR": { minimo: 237.30, tarifa: 7.91 },
+        "TXF": { minimo: 96.00, tarifa: 3.20 },
+        "UBA": { minimo: 110.70, tarifa: 3.69 },
+        "UDI": { minimo: 168.60, tarifa: 5.62 },
+        "UMU": { minimo: 177.30, tarifa: 5.91 },
+        "URG": { minimo: 216.60, tarifa: 7.22 },
+        "UVI": { minimo: 177.30, tarifa: 5.91 },
+        "VAG": { minimo: 134.10, tarifa: 4.47 },
+        "VAL02": { minimo: 117.90, tarifa: 3.93 },
+        "VCP": { minimo: 110.70, tarifa: 3.69 },
+        "VDC": { minimo: 96.00, tarifa: 3.20 },
+        "VIN02": { minimo: 117.90, tarifa: 3.93 },
+        "VIX": { minimo: 237.30, tarifa: 7.91 },
+        "VIX01": { minimo: 244.80, tarifa: 8.16 },
+        "VPA02": { minimo: 186.30, tarifa: 6.21 },
+        "XAP": { minimo: 216.60, tarifa: 7.22 },
+        "XAP01": { minimo: 223.50, tarifa: 7.45 },
+        "ZBW01": { minimo: 117.90, tarifa: 3.93 }
+    };
+
+    // Function to format currency (Brazilian Real)
+    function formatCurrency(value) {
+        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    // Function to search for the tariff
+    function buscarTarifa() {
+        const destinoInput = document.getElementById('destinoInput');
+        const resultadoDiv = document.getElementById('resultado');
+        const destino = destinoInput.value.trim().toUpperCase(); // Get value, remove whitespace, convert to uppercase
+
+        if (!destino) {
+            resultadoDiv.innerHTML = '<span class="error">Por favor, digite um código de destino.</span>';
+            return;
+        }
+
+        if (tarifas.hasOwnProperty(destino)) {
+            const data = tarifas[destino];
+            resultadoDiv.innerHTML = `
+                <div class="success">
+                    <strong>Destino:</strong> ${destino}<br>
+                    <strong>Mínimo (30KG):</strong> ${formatCurrency(data.minimo)}<br>
+                    <strong>Tarifa (por KG):</strong> ${formatCurrency(data.tarifa)}
+                </div>
+            `;
+        } else {
+            resultadoDiv.innerHTML = `<span class="error">Destino "${destino}" não encontrado. Verifique o código e tente novamente.</span>`;
+        }
+    }
+
+    // Optional: Allow pressing Enter in the input field to trigger the search
+    document.getElementById('destinoInput').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default form submission if it were in a form
+            buscarTarifa();
+        }
+    });
+
+</script>
+
+</body>
+</html>
